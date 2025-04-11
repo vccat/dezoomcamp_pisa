@@ -1,0 +1,301 @@
+version: 2
+
+models:
+  - name: stg_2022_school
+    description: "Cleaned school-level data  of 2022 from PISA dataset"
+    columns:
+      - name: schoolID
+        description: "Unique school identifier within country"
+        tests:
+          - unique
+          - not_null
+
+      - name: countryCode
+        description: "3-letter country code"
+        tests:
+          - not_null
+
+      - name: schoolType
+        description: "Type of school (Public/Private/Other)"
+        tests:
+          - accepted_values:
+              values: ['Public', 'Private', 'Other']
+
+  - name: stg_2022_student
+    description: "Cleaned student-level data of 2022 from PISA dataset"
+    columns:
+      - name: studentID
+        description: "Unique student identifier within country"
+        tests:
+          - unique
+          - not_null
+
+      - name: schoolID
+        description: "Foreign key to school table"
+        tests:
+          - relationships:
+              to: ref('stg_2022_school')
+              field: schoolID
+
+      - name: countryCode
+        description: "3-letter country code"
+        tests:
+          - not_null
+
+      - name: ICTAVHOM
+        description: "Availability and Usage of ICT at Home "
+        
+      - name: ICTAccess
+        description: "computer/internet resource access at home, categorized into 'Low','Medium' and 'High'"
+      
+      - name: calc_weight
+        description: "Final student weight for analysis"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+        
+      - name: pv1_math
+        description: "First plausible value for mathematics"
+      - name: pv2_math
+        description: "Second plausible value for mathematics"
+      - name: pv3_math
+        description: "Third plausible value for mathematics"
+      - name: pv4_math
+        description: "Fourth plausible value for mathematics"
+      - name: pv5_math
+        description: "Fifth plausible value for mathematics"
+      - name: pv6_math
+        description: "Sixth plausible value for mathematics"
+      - name: pv7_math
+        description: "Seventh plausible value for mathematics"
+      - name: pv8_math
+        description: "Eighth plausible value for mathematics"
+      - name: pv9_math
+        description: "Nineth plausible value for mathematics"
+      - name: pv10_math
+        description: "Tenth plausible value for mathematics"
+      - name: pv1_reading
+        description: "First plausible value for reading"
+      - name: pv2_reading
+        description: "Second plausible value for reading"
+      - name: pv3_reading
+        description: "Third plausible value for reading"
+      - name: pv4_reading
+        description: "Fourth plausible value for reading"
+      - name: pv5_reading
+        description: "Fifth plausible value for reading"
+      - name: pv6_reading
+        description: "Sixth plausible value for reading"
+      - name: pv7_reading
+        description: "Seventh plausible value for reading"
+      - name: pv8_reading
+        description: "Eighth plausible value for reading"
+      - name: pv9_reading
+        description: "Nineth plausible value for reading"
+      - name: pv10_reading
+        description: "Tenth plausible value for reading"
+      - name: pv1_science
+        description: "First plausible value for science"
+      - name: pv2_science
+        description: "Second plausible value for science"
+      - name: pv3_science
+        description: "Third plausible value for science"
+      - name: pv4_science
+        description: "Fourth plausible value for science"
+      - name: pv5_science
+        description: "Fifth plausible value for science"
+      - name: pv6_science
+        description: "Sixth plausible value for science"
+      - name: pv7_science
+        description: "Seventh plausible value for science"
+      - name: pv8_science
+        description: "Eighth plausible value for science"
+      - name: pv9_science
+        description: "Nineth plausible value for science"
+      - name: pv10_science
+        description: "Tenth plausible value for science"
+
+  - name: stg_2018_student
+    description: "Cleaned student-level data of 2018 from PISA dataset"
+    columns:
+      - name: studentID
+        description: "Unique student identifier within country"
+        tests:
+          - unique
+          - not_null
+
+      - name: schoolID
+        description: "Foreign key to school table"
+
+      - name: countryCode
+        description: "3-letter country code"
+        tests:
+          - not_null
+
+      - name: ICTHome
+        description: "computer/internet resource access at home. Data type is float."
+        
+      - name: ICTAccess
+        description: "computer/internet resource access at home, categorized into 'Low','Medium' and 'High'"
+      
+      - name: calc_weight
+        description: "Final student weight for analysis"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+        
+      - name: pv1_math
+        description: "First plausible value for mathematics"
+      - name: pv2_math
+        description: "Second plausible value for mathematics"
+      - name: pv3_math
+        description: "Third plausible value for mathematics"
+      - name: pv4_math
+        description: "Fourth plausible value for mathematics"
+      - name: pv5_math
+        description: "Fifth plausible value for mathematics"
+      - name: pv6_math
+        description: "Sixth plausible value for mathematics"
+      - name: pv7_math
+        description: "Seventh plausible value for mathematics"
+      - name: pv8_math
+        description: "Eighth plausible value for mathematics"
+      - name: pv9_math
+        description: "Nineth plausible value for mathematics"
+      - name: pv10_math
+        description: "Tenth plausible value for mathematics"
+      - name: pv1_reading
+        description: "First plausible value for reading"
+      - name: pv2_reading
+        description: "Second plausible value for reading"
+      - name: pv3_reading
+        description: "Third plausible value for reading"
+      - name: pv4_reading
+        description: "Fourth plausible value for reading"
+      - name: pv5_reading
+        description: "Fifth plausible value for reading"
+      - name: pv6_reading
+        description: "Sixth plausible value for reading"
+      - name: pv7_reading
+        description: "Seventh plausible value for reading"
+      - name: pv8_reading
+        description: "Eighth plausible value for reading"
+      - name: pv9_reading
+        description: "Nineth plausible value for reading"
+      - name: pv10_reading
+        description: "Tenth plausible value for reading"
+      - name: pv1_science
+        description: "First plausible value for science"
+      - name: pv2_science
+        description: "Second plausible value for science"
+      - name: pv3_science
+        description: "Third plausible value for science"
+      - name: pv4_science
+        description: "Fourth plausible value for science"
+      - name: pv5_science
+        description: "Fifth plausible value for science"
+      - name: pv6_science
+        description: "Sixth plausible value for science"
+      - name: pv7_science
+        description: "Seventh plausible value for science"
+      - name: pv8_science
+        description: "Eighth plausible value for science"
+      - name: pv9_science
+        description: "Nineth plausible value for science"
+      - name: pv10_science
+        description: "Tenth plausible value for science"
+
+  - name: stg_2015_student
+    description: "Cleaned student-level data of 2015 from PISA dataset"
+    columns:
+      - name: studentID
+        description: "Unique student identifier within country"
+        tests:
+          - unique
+          - not_null
+
+      - name: schoolID
+        description: "Foreign key to school table"
+        
+      - name: countryCode
+        description: "3-letter country code"
+        tests:
+          - not_null
+
+      - name: ICTHOME_PROXY
+        description: "computer/internet resource access at home. Data type is float."
+        
+      - name: ICTAccess
+        description: "computer/internet resource access at home, categorized into 'Low','Medium' and 'High'"
+      
+      - name: calc_weight
+        description: "Final student weight for analysis"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+        
+      - name: pv1_math
+        description: "First plausible value for mathematics"
+      - name: pv2_math
+        description: "Second plausible value for mathematics"
+      - name: pv3_math
+        description: "Third plausible value for mathematics"
+      - name: pv4_math
+        description: "Fourth plausible value for mathematics"
+      - name: pv5_math
+        description: "Fifth plausible value for mathematics"
+      - name: pv6_math
+        description: "Sixth plausible value for mathematics"
+      - name: pv7_math
+        description: "Seventh plausible value for mathematics"
+      - name: pv8_math
+        description: "Eighth plausible value for mathematics"
+      - name: pv9_math
+        description: "Nineth plausible value for mathematics"
+      - name: pv10_math
+        description: "Tenth plausible value for mathematics"
+      - name: pv1_reading
+        description: "First plausible value for reading"
+      - name: pv2_reading
+        description: "Second plausible value for reading"
+      - name: pv3_reading
+        description: "Third plausible value for reading"
+      - name: pv4_reading
+        description: "Fourth plausible value for reading"
+      - name: pv5_reading
+        description: "Fifth plausible value for reading"
+      - name: pv6_reading
+        description: "Sixth plausible value for reading"
+      - name: pv7_reading
+        description: "Seventh plausible value for reading"
+      - name: pv8_reading
+        description: "Eighth plausible value for reading"
+      - name: pv9_reading
+        description: "Nineth plausible value for reading"
+      - name: pv10_reading
+        description: "Tenth plausible value for reading"
+      - name: pv1_science
+        description: "First plausible value for science"
+      - name: pv2_science
+        description: "Second plausible value for science"
+      - name: pv3_science
+        description: "Third plausible value for science"
+      - name: pv4_science
+        description: "Fourth plausible value for science"
+      - name: pv5_science
+        description: "Fifth plausible value for science"
+      - name: pv6_science
+        description: "Sixth plausible value for science"
+      - name: pv7_science
+        description: "Seventh plausible value for science"
+      - name: pv8_science
+        description: "Eighth plausible value for science"
+      - name: pv9_science
+        description: "Nineth plausible value for science"
+      - name: pv10_science
+        description: "Tenth plausible value for science"
+      
+    

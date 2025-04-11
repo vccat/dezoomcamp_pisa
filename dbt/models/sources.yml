@@ -1,0 +1,31 @@
+version: 2
+
+sources:
+  - name: pisa_external
+    database: dezoomcamp2025-448509
+    schema: dezoomamp_dataset_fp
+    tables:
+      - name: school_2022
+        description: "Raw school questionnaire data of 2022 from GCS"
+        external:
+          location: 'gs://dezoomcamp2025-448509-bucket_fp/2022_School.parquet'
+          options:
+            format: parquet
+      - name: student_2022
+        description: "Raw student questionnaire data of 2022 from GCS"
+        external:
+          location: 'gs://dezoomcamp2025-448509-bucket_fp/2022_Student.parquet'
+          options:
+            format: parquet
+      - name: student_2018
+        description: "Raw student questionnaire data of 2018 from GCS"
+        external:
+          location: 'gs://dezoomcamp2025-448509-bucket_fp/2018_Student.parquet'
+          options:
+            format: parquet
+      - name: student_2015
+        description: "Raw student questionnaire data of 2015 from GCS"
+        external:
+          location: 'gs://dezoomcamp2025-448509-bucket_fp/2015_Student.parquet'
+          options:
+            format: parquet
