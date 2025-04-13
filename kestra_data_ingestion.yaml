@@ -1,0 +1,163 @@
+id: final_project
+namespace: dezoomcamp
+description: |
+  This flow is to download PISA raw datafiles (SAS files) and then upload the data files to GCS.
+
+inputs:
+  - id: year
+    type: SELECT
+    displayName: Select year
+    values: ["2022","2018","2015","2012"]
+    defaults: "2022"
+    allowCustomValue: true
+  
+  - id: filename
+    type: SELECT
+    displayName: Select which questionnaire to download
+    values: ["Student","School"]
+    defaults: "School"
+    allowCustomValue: true
+  
+variables:
+  output_file: "{{inputs.year}}_{{inputs.filename}}.parquet"
+  gcs_file: "gs://{{kv('GCP_BUCKET_NAME')}}/{{vars.output_file}}"
+
+tasks:
+  #0. set the download url based on input year and file name.
+  - id: get_download_url
+    type: io.kestra.plugin.core.flow.Switch
+    value: "{{inputs.year}}_{{inputs.filename}}"
+    cases:
+      "2022_School":
+        - id: School_2022
+          type: io.kestra.plugin.core.debug.Return
+          format: "https://webfs.oecd.org/pisa2022/SCH_QQQ_SAS.zip"
+      "2022_Student":
+        - id: Student_2022
+          type: io.kestra.plugin.core.debug.Return
+          format: "https://webfs.oecd.org/pisa2022/STU_QQQ_SAS.zip"
+      "2018_School":
+        - id: School_2018
+          type: io.kestra.plugin.core.debug.Return
+          format: "https://webfs.oecd.org/pisa2018/SAS_SCH_QQQ.zip"
+      "2018_Student":
+        - id: Student_2018
+          type: io.kestra.plugin.core.debug.Return
+          format: "https://webfs.oecd.org/pisa2018/SAS_STU_QQQ.zip"
+      "2015_School":
+        - id: School_2015
+          type: io.kestra.plugin.core.debug.Return
+          format: "https://webfs.oecd.org/pisa/PUF_SAS_COMBINED_CMB_SCH_QQQ.zip"
+      "2015_Student":
+        - id: Student_2015
+          type: io.kestra.plugin.core.debug.Return
+          format: "https://webfs.oecd.org/pisa/PUF_SAS_COMBINED_CMB_STU_QQQ.zip"
+    disabled: false
+
+  # 1. Download and unzip
+  - id: download_pisa
+    type: io.kestra.plugin.core.http.Download
+    uri: "{{outputs[inputs.filename ~ '_' ~ inputs.year].value}}"
+    disabled: false
+ 
+  - id: unzip_pisa
+    type: io.kestra.plugin.scripts.shell.Commands
+    inputFiles:
+      raw.zip: "{{ outputs.download_pisa.uri }}"
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - |
+        if [ "{{inputs.year}}" = "2022" ]; then
+          # 2022: Flat structure (CY08MSP_SCH_QQQ.SAS7BDAT)
+          unzip -j raw.zip "*.SAS7BDAT" -d ./
+          mv *.SAS7BDAT extracted_data.sas7bdat
+        elif [ "{{inputs.year}}" = "2018" ]; then
+          # 2018: Nested in SCH/ folder
+          unzip -o -j raw.zip "S*/*.sas7bdat" -d ./
+          mv *.sas7bdat extracted_data.sas7bdat
+        elif [ "{{inputs.year}}" = "2015" ]; then
+          unzip -o -j raw.zip "*.sas7bdat" -d ./
+          mv *.sas7bdat extracted_data.sas7bdat
+        else
+          echo "Unsupported year: {{inputs.year}}"
+          exit 1
+        fi
+    outputFiles:
+      - "extracted_data.sas7bdat"
+    disabled: false
+  
+  #2. Convert SAS files to parquet files
+  - id: process_sas
+    type: io.kestra.plugin.scripts.python.Script
+    beforeCommands:
+      - pip install pandas pyreadstat pyarrow
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker  
+    containerImage: python:slim
+    warningOnStdErr: false
+    outputFiles:
+      - "*.parquet"
+    inputFiles:
+      pisa.SAS7BDAT: "{{ outputs.unzip_pisa.outputFiles['extracted_data.sas7bdat'] }}"
+    script: |
+      import pyreadstat
+      import pandas as pd
+      import pyarrow as pa
+      from pyarrow import parquet as pq
+
+      # Process in chunks of 100k rows
+      chunk_size = 100_000
+      writer = None
+      total_records = 0
+
+      for df_chunk, _ in pyreadstat.read_file_in_chunks(
+            pyreadstat.read_sas7bdat,
+            "pisa.SAS7BDAT",
+            chunksize=chunk_size
+        ):
+            # Process chunk
+            df_converted = df_chunk.astype({
+                col: 'string' if dtype == 'object' else 'float64'
+                for col, dtype in df_chunk.dtypes.items()
+              })
+            if writer is None:
+                schema = pa.Schema.from_pandas(df_converted)
+                writer = pq.ParquetWriter("output.parquet", schema=schema)
+                print("🟢 Conversion started - schema initialized")
+
+            # Convert chunk to PyArrow Table and write to Parquet
+            table = pa.Table.from_pandas(df_converted, schema=schema)
+            writer.write_table(table)
+
+            # Update counters and show progress
+            chunk_records = len(df_chunk)
+            total_records += chunk_records
+            print(f"✅ Processed chunk: {chunk_records:,} rows | Total: {total_records:,}")
+
+      if writer:
+        writer.close()
+        print(f"\n🎉 Conversion complete! Total records written: {total_records:,}")
+
+    disabled: false
+  
+  - id: upload_to_gcs
+    type: io.kestra.plugin.gcp.gcs.Upload
+    from: "{{ outputs.process_sas.outputFiles['output.parquet'] }}"
+    to: "{{ render(vars.gcs_file) }}"
+    disabled: false
+
+  - id: purge_files
+    type: io.kestra.plugin.core.storage.PurgeCurrentExecutionFiles
+    description: If you'd like to explore Kestra outputs, disable it.
+    disabled: false
+
+pluginDefaults:
+  - type: io.kestra.plugin.gcp
+    values:
+      serviceAccount: "{{kv('GCP_CREDS')}}"
+      projectId: "{{kv('GCP_PROJECT_ID')}}"
+      location: "{{kv('GCP_LOCATION')}}"
+      bucket: "{{kv('GCP_BUCKET_NAME')}}"
+
+         
