@@ -6,6 +6,11 @@
 - Temporal Analysis: Digital Resources vs. Science **Scores**  
   _"How has access to digital resources (e.g., computers) impacted science scores over time?"_
 
+##Dashboard  
+https://lookerstudio.google.com/s/p3Spjz5r__I
+
+![alt text](pisa_dashboard.png)
+
 ### Prerequisites
 1. Google platform account
    - A project ID.
